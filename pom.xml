@@ -45,6 +45,8 @@
   
   <properties>
     <version.dep.mockito>2.13.0</version.dep.mockito>
+    
+    <version.plugin.coveralls>4.3.0</version.plugin.coveralls>
   </properties>
   
   <dependencies>
@@ -55,4 +57,39 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  
+  <profiles>
+    <profile>
+      <id>coveralls</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        
+        <property>
+          <name>env.COVERALLS_REPO_TOKEN</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.eluder.coveralls</groupId>
+            <artifactId>coveralls-maven-plugin</artifactId>
+            <version>${version.plugin.coveralls}</version>
+            <executions>
+              <execution>
+                <id>update-coveralls</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <configuration>
+                  <jacocoReports>${project.build.directory}/coverage/report/jacoco.xml</jacocoReports>
+                  <repoToken>${env.COVERALLS_REPO_TOKEN}</repoToken>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
