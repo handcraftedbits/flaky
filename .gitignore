@@ -1,0 +1,7 @@
+.settings/
+target/
+
+.checkstyle
+.classpath
+.fbExcludeFilterFile
+.project
