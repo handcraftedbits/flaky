@@ -1,4 +1,4 @@
-# Flaky [![Maven](https://img.shields.io/maven-metadata/v/http/central.maven.org/maven2/com/handcraftedbits/web/flaky/maven-metadata.xml.svg)](https://mvnrepository.com/artifact/com.handcraftedbits.web/flaky/1.0.0) [![Build Status](https://travis-ci.org/handcraftedbits/flaky.svg?branch=master)](https://travis-ci.org/handcraftedbits/flaky) [![Coverage Status](https://coveralls.io/repos/github/handcraftedbits/flaky/badge.svg)](https://coveralls.io/github/handcraftedbits/flaky)
+# Flaky [![Maven](https://img.shields.io/maven-metadata/v/http/central.maven.org/maven2/com/handcraftedbits/web/flaky/maven-metadata.xml.svg)](https://mvnrepository.com/artifact/com.handcraftedbits.web/flaky/1.0.1) [![Build Status](https://travis-ci.org/handcraftedbits/flaky.svg?branch=master)](https://travis-ci.org/handcraftedbits/flaky) [![Coverage Status](https://coveralls.io/repos/github/handcraftedbits/flaky/badge.svg)](https://coveralls.io/github/handcraftedbits/flaky)
 
 A Java implementation of [Twitter Snowflake](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake.html).
 The implementation sticks closely to the specification with the exception that the node and sequence lengths can be
@@ -53,7 +53,7 @@ Add the following dependency in your `pom.xml` file:
 <dependency>
   <groupId>com.handcraftedbits.web</groupId>
   <artifactId>flaky</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -70,7 +70,7 @@ generator = new FlakyId.Builder().withNode(1L).build();
 generator = new FlakyId.Builder().withNodeLength(4L).build();
 
 // Use a custom epoch and longer sequence length.
-generator = new FlakyId.Builder().withEpoch(System.currentTimeMillis()).withSequenceLength(16L);
+generator = new FlakyId.Builder().withEpoch(System.currentTimeMillis()).withSequenceLength(16L).build();
 ```
 
 Then, generate away!
@@ -89,9 +89,9 @@ catch (SystemClockException e) {
 ```
 
 Unfortunately, it's not possible to generate IDs without having to deal with exceptions.  There is a very real
-possibility that the machine's system clock will drift backwards from time to time, such as when the system clock
-adjusts after receiving an updated time from its NTP server.  It's not possible for Flaky to handle this situation
-without creating the possibility of collisions, so instead `generatedId()` will throw `SystemClockException` in this
-case.  You will not be able to continue generating IDs until the system clock catches up with the last recorded value,
-which is provided via `SystemClockException.getNextTimestamp()`.  Whenever a `SystemClockException` is thrown your best
-course of action is to simply wait until the system clock catches up.
+possibility that the machine's system clock will drift backwards from time to time, such as when the machine receives an
+updated time from its NTP server.  It's not possible for Flaky to handle this situation without creating the possibility
+of collisions, so instead `generateId()` will throw `SystemClockException` in this case.  You will not be able to
+continue generating IDs until the system clock catches up with the last recorded value, which is provided via
+`SystemClockException.getNextTimestamp()`.  Whenever a `SystemClockException` is thrown your best course of
+action is to simply wait until the system clock catches up.

@@ -15,6 +15,8 @@
  */
 package com.handcraftedbits.flaky.api.generator;
 
+import java.util.concurrent.locks.LockSupport;
+
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -158,6 +160,51 @@ public class FlakyIdTest {
           }
      }
 
+     @Test
+     public void testGenerateIdWait () throws Throwable {
+          long currentTime = 0L;
+          final FlakyId generator = Mockito.spy(new FlakyId.Builder().build());
+          final long start = System.currentTimeMillis();
+          final long waitTime = 100L;
+
+          // Expect SystemClockException to be thrown when the clock drifts backwards and a 100ms wait to generate an
+          // ID.
+
+          Mockito.when(generator.getCurrentTimestamp()).thenAnswer(new WaitAnswer(start, waitTime));
+
+          try {
+               generator.generateId();
+          }
+
+          catch (final SystemClockException e) {
+               Assert.fail("generateId() should not have thrown an exception");
+          }
+
+          try {
+               generator.generateId();
+
+               Assert.fail("generateId() should have thrown an exception");
+          }
+
+          catch (final SystemClockException e) {
+               Assert.assertEquals(e.getNextTimestamp(), start + waitTime);
+
+               while (currentTime < e.getNextTimestamp()) {
+                    LockSupport.parkUntil(e.getNextTimestamp());
+
+                    currentTime = System.currentTimeMillis();
+               }
+          }
+
+          Assert.assertTrue(currentTime - start >= waitTime);
+
+          // ID generation should succeed now.
+
+          Mockito.reset(generator);
+
+          generator.generateId();
+     }
+
      private static final class OverflowAnswer implements Answer<Long> {
           private final long expectedTimestamp;
           private int count;
@@ -175,6 +222,29 @@ public class FlakyIdTest {
                }
 
                return (this.expectedTimestamp + 1);
+          }
+     }
+
+     private static final class WaitAnswer implements Answer<Long> {
+          private boolean firstCall;
+          private final long initialTimestamp;
+          private final long waitTime;
+
+          private WaitAnswer (final long initialTimestamp, final long waitTime) {
+               this.firstCall = true;
+               this.initialTimestamp = initialTimestamp;
+               this.waitTime = waitTime;
+          }
+
+          @Override
+          public Long answer (final InvocationOnMock invocation) throws Throwable {
+               if (this.firstCall) {
+                    this.firstCall = false;
+
+                    return (this.initialTimestamp + this.waitTime);
+               }
+
+               return this.initialTimestamp;
           }
      }
 }

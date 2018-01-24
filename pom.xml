@@ -30,7 +30,7 @@
   <parent>
     <groupId>com.handcraftedbits</groupId>
     <artifactId>handcraftedbits-parent-java</artifactId>
-    <version>1.2.9</version>
+    <version>1.2.10</version>
   </parent>
 
   <scm>
@@ -42,55 +42,4 @@
     <url>https://github.com/handcraftedbits/flaky/issues</url>
     <system>GitHub Issues</system>
   </issueManagement>
-  
-  <properties>
-    <version.dep.mockito>2.13.0</version.dep.mockito>
-    
-    <version.plugin.coveralls>4.3.0</version.plugin.coveralls>
-  </properties>
-  
-  <dependencies>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <version>${version.dep.mockito}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  
-  <profiles>
-    <profile>
-      <id>coveralls</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        
-        <property>
-          <name>env.COVERALLS_REPO_TOKEN</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.eluder.coveralls</groupId>
-            <artifactId>coveralls-maven-plugin</artifactId>
-            <version>${version.plugin.coveralls}</version>
-            <executions>
-              <execution>
-                <id>update-coveralls</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>report</goal>
-                </goals>
-                <configuration>
-                  <jacocoReports>${project.build.directory}/coverage/report/jacoco.xml</jacocoReports>
-                  <repoToken>${env.COVERALLS_REPO_TOKEN}</repoToken>
-                  <skip>${skipTests}</skip>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
