@@ -24,7 +24,7 @@
   <name>Flaky</name>
   <description>A Java implementation of Twitter Snowflake</description>
   <url>https://github.com/handcraftedbits/flaky</url>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.3-SNAPSHOT</version>
   <inceptionYear>2018</inceptionYear>
 
   <parent>
