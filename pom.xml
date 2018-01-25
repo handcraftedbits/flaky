@@ -42,4 +42,8 @@
     <url>https://github.com/handcraftedbits/flaky/issues</url>
     <system>GitHub Issues</system>
   </issueManagement>
+  
+  <properties>
+    <coverage.minimum>1.00</coverage.minimum>
+  </properties>
 </project>

@@ -138,6 +138,28 @@ public class FlakyIdTest {
      }
 
      @Test
+     public void testGenerateIdSafeWait () {
+          long currentTime = 0L;
+          final FlakyId generator = Mockito.spy(new FlakyId.Builder().build());
+          final long start = System.currentTimeMillis();
+          final long waitTime = 100L;
+
+          // Make the system clock drift backwards and expect a 100ms wait to generate an ID.
+
+          Mockito.when(generator.getCurrentTimestamp()).thenAnswer(new WaitAnswer(start, waitTime));
+
+          generator.generateIdSafe();
+
+          // This call should result in a wait.
+
+          generator.generateIdSafe();
+
+          currentTime = System.currentTimeMillis();
+
+          Assert.assertTrue(currentTime - start >= waitTime);
+     }
+
+     @Test
      public void testGenerateIdSimple () throws Throwable {
           final long expectedNode = 31L;
           final long expectedTimestamp = 1234L;
@@ -226,25 +248,28 @@ public class FlakyIdTest {
      }
 
      private static final class WaitAnswer implements Answer<Long> {
-          private boolean firstCall;
+          private int count;
           private final long initialTimestamp;
           private final long waitTime;
 
           private WaitAnswer (final long initialTimestamp, final long waitTime) {
-               this.firstCall = true;
+               this.count = 0;
                this.initialTimestamp = initialTimestamp;
                this.waitTime = waitTime;
           }
 
           @Override
           public Long answer (final InvocationOnMock invocation) throws Throwable {
-               if (this.firstCall) {
-                    this.firstCall = false;
+               switch (this.count++) {
+                    case 0:
+                         return (this.initialTimestamp + this.waitTime);
 
-                    return (this.initialTimestamp + this.waitTime);
+                    case 1:
+                         return this.initialTimestamp;
+
+                    default:
+                         return System.currentTimeMillis();
                }
-
-               return this.initialTimestamp;
           }
      }
 }

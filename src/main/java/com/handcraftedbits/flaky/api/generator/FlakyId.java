@@ -17,6 +17,9 @@ package com.handcraftedbits.flaky.api.generator;
 
 import java.util.concurrent.locks.LockSupport;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.handcraftedbits.flaky.api.exception.SystemClockException;
 
 /**
@@ -35,6 +38,8 @@ public final class FlakyId {
      private static final long EPOCH_DEFAULT = 1480323660000L;
      private static final long LENGTH_NODE_DEFAULT = 10L;
      private static final long LENGTH_SEQUENCE_DEFAULT = 12L;
+
+     private static final Logger logger = LoggerFactory.getLogger(FlakyId.class);
 
      private final long epoch;
      private volatile long lastTimestamp;
@@ -60,11 +65,17 @@ public final class FlakyId {
       */
 
      public synchronized long generateId () throws SystemClockException {
-          long timestamp = getCurrentTimestamp();
+          final long timestamp = getCurrentTimestamp();
 
           if (timestamp < this.lastTimestamp) {
                throw new SystemClockException(this.lastTimestamp);
           }
+
+          return generateIdCommon(timestamp);
+     }
+
+     private long generateIdCommon (final long providedTimestamp) {
+          long timestamp = providedTimestamp;
 
           if (timestamp == this.lastTimestamp) {
                this.sequence = (this.sequence + 1) & this.sequenceMask;
@@ -88,6 +99,33 @@ public final class FlakyId {
           this.lastTimestamp = timestamp;
 
           return (((timestamp - this.epoch) << this.timestampShift) | (this.node << this.nodeShift) | this.sequence);
+     }
+
+     /**
+      * Generates a Flaky ID in a safe manner by always waiting if the system clock drifts backwards. Be aware that
+      * there is no limit on how long this method will wait.
+      *
+      * @return a long containing a new Flaky ID.
+      */
+
+     public synchronized long generateIdSafe () {
+          long timestamp = getCurrentTimestamp();
+
+          if (timestamp < this.lastTimestamp) {
+               FlakyId.logger.warn(String.format("system clock has drifted backwards; waiting %dms",
+                    (this.lastTimestamp - timestamp)));
+
+               while (timestamp < this.lastTimestamp) {
+                    // Doing this in a loop because LockSupport.parkUntil() can return early for any reason, so we
+                    // can't assume we've waited long enough.
+
+                    LockSupport.parkUntil(this.lastTimestamp);
+
+                    timestamp = getCurrentTimestamp();
+               }
+          }
+
+          return generateIdCommon(timestamp);
      }
 
      long getCurrentTimestamp () {
