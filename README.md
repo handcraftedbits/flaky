@@ -1,4 +1,4 @@
-# Flaky [![Maven](https://img.shields.io/maven-metadata/v/http/central.maven.org/maven2/com/handcraftedbits/web/flaky/maven-metadata.xml.svg)](https://mvnrepository.com/artifact/com.handcraftedbits.web/flaky/1.0.1) [![Build Status](https://travis-ci.org/handcraftedbits/flaky.svg?branch=master)](https://travis-ci.org/handcraftedbits/flaky) [![Coverage Status](https://coveralls.io/repos/github/handcraftedbits/flaky/badge.svg)](https://coveralls.io/github/handcraftedbits/flaky)
+# Flaky [![Maven](https://img.shields.io/maven-metadata/v/http/central.maven.org/maven2/com/handcraftedbits/web/flaky/maven-metadata.xml.svg)](https://mvnrepository.com/artifact/com.handcraftedbits.web/flaky/1.0.2) [![Build Status](https://travis-ci.org/handcraftedbits/flaky.svg?branch=master)](https://travis-ci.org/handcraftedbits/flaky) [![Coverage Status](https://coveralls.io/repos/github/handcraftedbits/flaky/badge.svg)](https://coveralls.io/github/handcraftedbits/flaky)
 
 A Java implementation of [Twitter Snowflake](https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake.html).
 The implementation sticks closely to the specification with the exception that the node and sequence lengths can be
@@ -76,6 +76,21 @@ generator = new FlakyId.Builder().withEpoch(System.currentTimeMillis()).withSequ
 Then, generate away!
 
 ```java
+long timestamp = generator.generateIdSafe();
+// ...
+```
+
+Note that there is a very real possibility that the machine's system clock will drift backwards from time to time (such
+as when updated time is received from an NTP server), and in that case `generateIdSafe()` will wait as long as
+necessary for the system clock to catch back up.  This is needed to ensure that IDs are unique and constantly
+increasing.  Keep in mind that there is no upper limit on how long this will be, but unless something is very wrong
+with the system clock this should be a fairly short amount of time.
+
+Alternatively, you can use `generateId()`, which will throw `SystemClockException` when the system clock drifts
+backwards.  This gives you the opportunity to decide how you want to handle this situation (i.e., do nothing, wait if
+the amount of time needed is short, fail, etc.):
+
+```java
 try {
      long timestamp = generator.generateId();
      // ...
@@ -87,11 +102,3 @@ catch (SystemClockException e) {
      java.util.concurrent.locks.LockSupport.parkUntil(e.getNextTimestamp());
 }
 ```
-
-Unfortunately, it's not possible to generate IDs without having to deal with exceptions.  There is a very real
-possibility that the machine's system clock will drift backwards from time to time, such as when the machine receives an
-updated time from its NTP server.  It's not possible for Flaky to handle this situation without creating the possibility
-of collisions, so instead `generateId()` will throw `SystemClockException` in this case.  You will not be able to
-continue generating IDs until the system clock catches up with the last recorded value, which is provided via
-`SystemClockException.getNextTimestamp()`.  Whenever a `SystemClockException` is thrown your best course of
-action is to simply wait until the system clock catches up.
