@@ -17,76 +17,87 @@ package com.handcraftedbits.flaky.api.generator;
 
 import java.util.concurrent.locks.LockSupport;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 import com.handcraftedbits.flaky.api.exception.SystemClockException;
 
-public class FlakyIdTest {
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^node length must be between.*$")
-     public void testBuilderInvalidMaximumNodeLength () {
-          new FlakyId.Builder().withNodeLength(FlakyId.LENGTH_NODE_MAX + 1L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^sequence length must be between.*$")
-     public void testBuilderInvalidMaximumSequenceLength () {
-          new FlakyId.Builder().withSequenceLength(FlakyId.LENGTH_TOTAL + 1L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^node length must be between.*$")
-     public void testBuilderInvalidMinimumNodeLength () {
-          new FlakyId.Builder().withNodeLength(FlakyId.LENGTH_NODE_MIN - 1L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^sequence length must be between.*$")
-     public void testBuilderInvalidMinimumSequenceLength () {
-          new FlakyId.Builder().withSequenceLength(FlakyId.LENGTH_SEQUENCE_MIN - 1L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^node value must not be less than zero$")
-     public void testBuilderNodeNegative () {
-          new FlakyId.Builder().withNode(-1L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^node value 2 does not fit within desired node length of 1 bit$")
-     public void testBuilderNodeTooLarge () {
-          new FlakyId.Builder().withNodeLength(1L).withNode(2L);
-     }
-
-     @Test(expectedExceptions = IllegalArgumentException.class,
-          expectedExceptionsMessageRegExp = "^node value 4 does not fit within desired node length of 2 bits$")
-     public void testBuilderNodeTooLargePlural () {
-          new FlakyId.Builder().withNode(4L).withNodeLength(2L);
+class FlakyIdTest {
+     @Test
+     void testBuilderInvalidMaximumNodeLength () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withNodeLength(FlakyId.LENGTH_NODE_MAX + 1L);
+          }, String.format("node length must be between %d and %d bits", FlakyId.LENGTH_NODE_MIN,
+               FlakyId.LENGTH_NODE_MAX));
      }
 
      @Test
-     public void testBuilderSimple () {
-          Assert.assertNotNull(new FlakyId.Builder().withNode(1L).withNodeLength(11L).withSequenceLength(11L)
+     void testBuilderInvalidMaximumSequenceLength () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withSequenceLength(FlakyId.LENGTH_TOTAL + 1L);
+          }, String.format("sequence length must be between %d and %d bits", FlakyId.LENGTH_SEQUENCE_MIN,
+               FlakyId.LENGTH_TOTAL));
+     }
+
+     @Test
+     void testBuilderInvalidMinimumNodeLength () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withNodeLength(FlakyId.LENGTH_NODE_MIN - 1L);
+          }, String.format("node length must be between %d and %d bits", FlakyId.LENGTH_NODE_MIN,
+               FlakyId.LENGTH_NODE_MAX));
+     }
+
+     @Test
+     void testBuilderInvalidMinimumSequenceLength () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withSequenceLength(FlakyId.LENGTH_SEQUENCE_MIN - 1L);
+          }, String.format("sequence length must be between %d and %d bits", FlakyId.LENGTH_SEQUENCE_MIN,
+               FlakyId.LENGTH_TOTAL));
+     }
+
+     @Test
+     void testBuilderNodeNegative () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withNode(-1L);
+          }, "node value must not be less than zero");
+     }
+
+     @Test
+     void testBuilderNodeTooLarge () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withNodeLength(1L).withNode(2L);
+          }, "node value 2 does not fit within desired node length of 1 bit");
+     }
+
+     @Test
+     void testBuilderNodeTooLargePlural () {
+          Assertions.assertThrows(IllegalArgumentException.class, () -> {
+               new FlakyId.Builder().withNode(4L).withNodeLength(2L);
+          }, "node value 4 does not fit within desired node length of 2 bits");
+     }
+
+     @Test
+     void testBuilderSimple () {
+          Assertions.assertNotNull(new FlakyId.Builder().withNode(1L).withNodeLength(11L).withSequenceLength(11L)
                .withEpoch(1L).build());
      }
 
      @Test
-     public void testBuilderValidNodeLength () {
+     void testBuilderValidNodeLength () {
           new FlakyId.Builder().withNodeLength(FlakyId.LENGTH_NODE_MIN).withNodeLength(FlakyId.LENGTH_NODE_MAX);
      }
 
      @Test
-     public void testBuilderValidSequenceLength () {
+     void testBuilderValidSequenceLength () {
           new FlakyId.Builder().withSequenceLength(FlakyId.LENGTH_SEQUENCE_MIN).withSequenceLength(
                FlakyId.LENGTH_TOTAL);
      }
 
      @Test
-     public void testGenerateIdClockException () {
+     void testGenerateIdClockException () {
           final FlakyId generator = Mockito.spy(new FlakyId.Builder().build());
 
           Mockito.when(generator.getCurrentTimestamp()).thenReturn(-1L);
@@ -94,18 +105,18 @@ public class FlakyIdTest {
           try {
                generator.generateId();
 
-               Assert.fail("generateId() should have failed with a SystemClockException");
+               Assertions.fail("generateId() should have failed with a SystemClockException");
           }
 
           catch (final SystemClockException e) {
-               Assert.assertEquals(e.getMessage(), "system clock is running backwards; wait until 0 to continue " +
+               Assertions.assertEquals(e.getMessage(), "system clock is running backwards; wait until 0 to continue " +
                     "generating IDs");
-               Assert.assertEquals(e.getNextTimestamp(), 0L);
+               Assertions.assertEquals(e.getNextTimestamp(), 0L);
           }
      }
 
      @Test
-     public void testGenerateIdOverflow () throws Throwable {
+     void testGenerateIdOverflow () throws Throwable {
           final long expectedNode = 65535L;
           final long expectedTimestamp = 1234L;
           final FlakyId generator;
@@ -125,20 +136,20 @@ public class FlakyIdTest {
           for (long i = 0; i < 64L; ++i) {
                id = generator.generateId();
 
-               Assert.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp);
-               Assert.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
-               Assert.assertEquals(id & ~(-1 << sequenceLength), i);
+               Assertions.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp);
+               Assertions.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
+               Assertions.assertEquals(id & ~(-1 << sequenceLength), i);
           }
 
           id = generator.generateId();
 
-          Assert.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp + 1L);
-          Assert.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
-          Assert.assertEquals(id & ~(-1 << sequenceLength), 0);
+          Assertions.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp + 1L);
+          Assertions.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
+          Assertions.assertEquals(id & ~(-1 << sequenceLength), 0);
      }
 
      @Test
-     public void testGenerateIdSafeWait () {
+     void testGenerateIdSafeWait () {
           long currentTime = 0L;
           final FlakyId generator = Mockito.spy(new FlakyId.Builder().build());
           final long start = System.currentTimeMillis();
@@ -156,11 +167,11 @@ public class FlakyIdTest {
 
           currentTime = System.currentTimeMillis();
 
-          Assert.assertTrue(currentTime - start >= waitTime);
+          Assertions.assertTrue(currentTime - start >= waitTime);
      }
 
      @Test
-     public void testGenerateIdSimple () throws Throwable {
+     void testGenerateIdSimple () throws Throwable {
           final long expectedNode = 31L;
           final long expectedTimestamp = 1234L;
           final FlakyId generator;
@@ -176,14 +187,14 @@ public class FlakyIdTest {
           for (long i = 0; i < 10L; ++i) {
                final long id = generator.generateId();
 
-               Assert.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp);
-               Assert.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
-               Assert.assertEquals(id & ~(-1 << FlakyId.LENGTH_TOTAL - nodeLength), i);
+               Assertions.assertEquals(id >> FlakyId.LENGTH_TOTAL, expectedTimestamp);
+               Assertions.assertEquals((id >> (FlakyId.LENGTH_TOTAL - nodeLength)) & ~(-1 << nodeLength), expectedNode);
+               Assertions.assertEquals(id & ~(-1 << FlakyId.LENGTH_TOTAL - nodeLength), i);
           }
      }
 
      @Test
-     public void testGenerateIdWait () throws Throwable {
+     void testGenerateIdWait () throws Throwable {
           long currentTime = 0L;
           final FlakyId generator = Mockito.spy(new FlakyId.Builder().build());
           final long start = System.currentTimeMillis();
@@ -199,17 +210,17 @@ public class FlakyIdTest {
           }
 
           catch (final SystemClockException e) {
-               Assert.fail("generateId() should not have thrown an exception");
+               Assertions.fail("generateId() should not have thrown an exception");
           }
 
           try {
                generator.generateId();
 
-               Assert.fail("generateId() should have thrown an exception");
+               Assertions.fail("generateId() should have thrown an exception");
           }
 
           catch (final SystemClockException e) {
-               Assert.assertEquals(e.getNextTimestamp(), start + waitTime);
+               Assertions.assertEquals(e.getNextTimestamp(), start + waitTime);
 
                while (currentTime < e.getNextTimestamp()) {
                     LockSupport.parkUntil(e.getNextTimestamp());
@@ -218,7 +229,7 @@ public class FlakyIdTest {
                }
           }
 
-          Assert.assertTrue(currentTime - start >= waitTime);
+          Assertions.assertTrue(currentTime - start >= waitTime);
 
           // ID generation should succeed now.
 
